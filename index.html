@@ -128,38 +128,7 @@ async function startCamera() {
 }
 
 </script>
-            // Load AI model
-            model = await tmImage.load(
-                MODEL_URL + "model.json",
-                MODEL_URL + "metadata.json"
-            );
-
-            // Create camera
-            webcam = new tmImage.Webcam(
-                300,
-                300,
-                true
-            );
-
-            await webcam.setup();
-            await webcam.play();
-
-            document.getElementById("camera").appendChild(
-                webcam.canvas
-            );
-
-            running = true;
-
-            predict();
-
-        } catch (error) {
-
-            document.getElementById("result").innerHTML =
-                "Camera or AI model error";
-
-            console.log(error);
-        }
-    }
+            
 
 
     async function predict() {
