@@ -59,7 +59,17 @@
 </head>
 
 <body>
+<video
+    id="video"
+    width="300"
+    height="300"
+    autoplay
+    playsinline>
+</video>
 
+<p id="status">
+    Camera not started
+</p>
     <h1>♻️ AI WASTE CLASSIFIER</h1>
 
     <p>Place a waste item in front of the camera.</p>
@@ -108,8 +118,16 @@ async function startCamera() {
         document.getElementById("status").innerHTML =
             "Camera Connected";
 
+    } catch (error) {
 
+        document.getElementById("status").innerHTML =
+            "Camera Error: " + error.message;
 
+    }
+
+}
+
+</script>
             // Load AI model
             model = await tmImage.load(
                 MODEL_URL + "model.json",
