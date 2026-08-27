@@ -160,7 +160,7 @@
             bestPrediction.className;
 
         const confidence =
-            bestPrediction.probability * 100;
+    (bestPrediction.probability * 100).toFixed(1);
 
 
         document.getElementById("result").innerHTML =
@@ -168,9 +168,14 @@
 
         document.getElementById("confidence").innerHTML =
             "Confidence: " +
-            confidence.toFixed(1) +
+            confidence +
             "%";
-
+// SEND RESULT TO MIT APP INVENTOR
+if (window.AppInventor) {
+    window.AppInventor.setWebViewString(
+        waste + "|" + confidence
+    );
+}
 
         // Waste bin recommendation
 
