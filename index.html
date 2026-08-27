@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AI Waste Classifier</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background: #f2f7f2;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 28px;
+        }
+
+        #camera {
+            margin: 15px auto;
+        }
+
+        button {
+            padding: 14px 25px;
+            margin: 8px;
+            font-size: 18px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+        }
+
+        #startButton {
+            background: #2e7d32;
+            color: white;
+        }
+
+        #result {
+            font-size: 28px;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+        #confidence {
+            font-size: 20px;
+            margin-top: 10px;
+        }
+
+        #bin {
+            font-size: 22px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>♻️ AI WASTE CLASSIFIER</h1>
+
+    <p>Place a waste item in front of the camera.</p>
+
+    <div id="camera"></div>
+
+    <button id="startButton" onclick="startCamera()">
+        📷 START CAMERA
+    </button>
+
+    <div id="result">
+        Waiting...
+    </div>
+
+    <div id="confidence"></div>
+
+    <div id="bin"></div>
+
+
+<script>
+
+    // CHANGE THIS TO YOUR TEACHABLE MACHINE MODEL URL
+    const MODEL_URL = "https://teachablemachine.withgoogle.com/models/BgKuujsPz/";
+
+    let model;
+    let webcam;
+    let running = false;
+
+
+    async function startCamera() {
+
+        try {
+
+            // Load AI model
+            model = await tmImage.load(
+                MODEL_URL + "model.json",
+                MODEL_URL + "metadata.json"
+            );
+
+            // Create camera
+            webcam = new tmImage.Webcam(
+                300,
+                300,
+                true
+            );
+
+            await webcam.setup();
+            await webcam.play();
+
+            document.getElementById("camera").appendChild(
+                webcam.canvas
+            );
+
+            running = true;
+
+            predict();
+
+        } catch (error) {
+
+            document.getElementById("result").innerHTML =
+                "Camera or AI model error";
+
+            console.log(error);
+        }
+    }
+
+
+    async function predict() {
+
+        if (!running) {
+            return;
+        }
+
+        webcam.update();
+
+        const predictions =
+            await model.predict(webcam.canvas);
+
+
+        // Find highest prediction
+
+        let bestPrediction = predictions[0];
+
+        for (let i = 1; i < predictions.length; i++) {
+
+            if (
+                predictions[i].probability >
+                bestPrediction.probability
+            ) {
+
+                bestPrediction = predictions[i];
+
+            }
+        }
+
+
+        const waste =
+            bestPrediction.className;
+
+        const confidence =
+            bestPrediction.probability * 100;
+
+
+        document.getElementById("result").innerHTML =
+            waste;
+
+        document.getElementById("confidence").innerHTML =
+            "Confidence: " +
+            confidence.toFixed(1) +
+            "%";
+
+
+        // Waste bin recommendation
+
+        let binMessage = "";
+
+        if (waste.toLowerCase() === "plastic") {
+
+            binMessage =
+                "🟦 Put it in the PLASTIC BIN";
+
+        }
+
+       
+        else if (waste.toLowerCase() === "metal") {
+
+            binMessage =
+                "🥫 Put it in the METAL BIN";
+
+        }
+
+       
+
+  
+
+        else if (waste.toLowerCase() === "organic") {
+
+            binMessage =
+                "🍌 Put it in the ORGANIC BIN";
+
+        }
+
+        else {
+
+            binMessage =
+                "♻️ Check the appropriate waste bin";
+
+        }
+
+
+        document.getElementById("bin").innerHTML =
+            binMessage;
+
+
+        // Continue prediction
+
+        window.requestAnimationFrame(predict);
+
+    }
+
+</script>
+
+</body>
+</html>
