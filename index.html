@@ -98,13 +98,14 @@ async function startCamera() {
             MODEL_URL + "model.json",
             MODEL_URL + "metadata.json"
         );
+ const stream =
+        await navigator.mediaDevices.getUserMedia({
+            video: true
+        });
 
-
-        // Create camera
-        webcam = new tmImage.Webcam(
-            300,
-            300,
-            true
+    document.getElementById("video").srcObject =
+        stream;
+       
         );
 
 
