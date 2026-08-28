@@ -107,8 +107,10 @@ async function startCamera() {
         stream;
        
         );
-
-
+<video id="video"
+       autoplay
+       playsinline>
+</video>
         await webcam.setup();
 
         await webcam.play();
