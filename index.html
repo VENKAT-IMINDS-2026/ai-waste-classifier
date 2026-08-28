@@ -61,7 +61,12 @@ button {
 
 <p>Show the waste item to the camera</p>
 
-<div id="camera"></div>
+<video id="video"
+       width="300"
+       height="300"
+       autoplay
+       playsinline>
+</video>
 
 <button onclick="startCamera()">
 📷 START CAMERA
@@ -84,8 +89,10 @@ Confidence: --
 const MODEL_URL ="https://teachablemachine.withgoogle.com/models/BgKuujsPz/";
 
 
-let model;
-let webcam;
+let model = null;
+let video = null;
+let canvas = null;
+let ctx = null;
 let running = false;
 
 
@@ -93,51 +100,94 @@ async function startCamera() {
 
     try {
 
-        // Load AI model
-        model = await tmImage.load(
-            MODEL_URL + "model.json",
-            MODEL_URL + "metadata.json"
-        );
- const stream =
-        await navigator.mediaDevices.getUserMedia({
-            video: true
-        });
+        document.getElementById("result").innerHTML =
+            "Starting camera...";
 
-    document.getElementById("video").srcObject =
-        stream;
-       
-        );
-<video id="video"
-       autoplay
-       playsinline>
-</video>
-        await webcam.setup();
+        /*
+         * IMPORTANT:
+         * Camera is requested immediately
+         * after the button is pressed.
+         */
 
-        await webcam.play();
+        const stream =
+            await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: "environment"
+                },
+                audio: false
+            });
 
 
-        document
-            .getElementById("camera")
-            .appendChild(webcam.canvas);
+        /*
+         * Connect camera to video
+         */
+
+        video =
+            document.getElementById("video");
+
+        video.srcObject = stream;
+
+        await video.play();
+
+
+        /*
+         * Create canvas for Teachable Machine
+         */
+
+        canvas =
+            document.createElement("canvas");
+
+        canvas.width = 300;
+        canvas.height = 300;
+
+        ctx =
+            canvas.getContext("2d");
 
 
         running = true;
 
-        predict();
-
-    }
-
-    catch(error) {
 
         document.getElementById("result").innerHTML =
-            "Camera Error: " + error.message;
+            "Camera Connected";
+
+        document.getElementById("confidence").innerHTML =
+            "Loading AI...";
+
+
+        /*
+         * NOW load Teachable Machine
+         */
+
+        model = await tmImage.load(
+            MODEL_URL + "model.json",
+            MODEL_URL + "metadata.json"
+        );
+
+
+        document.getElementById("confidence").innerHTML =
+            "AI Ready";
+
+
+        /*
+         * Start prediction
+         */
+
+        predict();
+
+
+    } catch (error) {
 
         console.log(error);
+
+        document.getElementById("result").innerHTML =
+            "Camera Error";
+
+        document.getElementById("confidence").innerHTML =
+            error.name || "Camera permission error";
 
     }
 
 }
-
 
 async function predict() {
 
@@ -146,12 +196,30 @@ async function predict() {
     }
 
 
-    webcam.update();
+    /*
+     * Copy camera frame to canvas
+     */
 
+    ctx.drawImage(
+        video,
+        0,
+        0,
+        300,
+        300
+    );
+
+
+    /*
+     * Ask Teachable Machine to classify it
+     */
 
     const predictions =
-        await model.predict(webcam.canvas);
+        await model.predict(canvas);
 
+
+    /*
+     * Find highest prediction
+     */
 
     let bestPrediction =
         predictions[0];
@@ -176,9 +244,18 @@ async function predict() {
     }
 
 
+    /*
+     * Waste name
+     */
+
     const waste =
         bestPrediction.className;
 
+
+    /*
+     * Confidence
+
+     */
 
     const confidence =
         (
@@ -186,7 +263,9 @@ async function predict() {
         ).toFixed(1);
 
 
-    // Display result
+    /*
+     * Display result
+     */
 
     document.getElementById("result")
         .innerHTML =
@@ -200,58 +279,55 @@ async function predict() {
         "%";
 
 
-    // Bin recommendation
+    /*
+     * Bin recommendation
+     */
 
     let binMessage = "";
 
+    const wasteLower =
+        waste.toLowerCase();
 
-    if (
-        waste.toLowerCase() ==
-        "plastic"
-    ) {
+
+    if (wasteLower.includes("plastic")) {
 
         binMessage =
-        "🟦 USE PLASTIC BIN";
+            "🟦 USE PLASTIC BIN";
 
     }
 
-    else if (
-        waste.toLowerCase() ==
-        "paper"
-    ) {
+    else if (wasteLower.includes("paper")) {
 
         binMessage =
-        "📄 USE PAPER BIN";
+            "📄 USE PAPER BIN";
 
     }
 
-    else if (
-        waste.toLowerCase() ==
-        "metal"
-    ) {
+    else if (wasteLower.includes("metal")) {
 
         binMessage =
-        "🥫 USE METAL BIN";
+            "🥫 USE METAL BIN";
 
     }
 
-    else if (
-        waste.toLowerCase() ==
-        "organic"
-    ) {
+    else if (wasteLower.includes("organic")) {
 
         binMessage =
-        "🍌 USE ORGANIC BIN";
+            "🍌 USE ORGANIC BIN";
 
     }
 
-    else if (
-        waste.toLowerCase() ==
-        "glass"
-    ) {
+    else if (wasteLower.includes("glass")) {
 
         binMessage =
-        "🍾 USE GLASS BIN";
+            "🍾 USE GLASS BIN";
+
+    }
+
+    else {
+
+        binMessage =
+            "♻️ CHECK APPROPRIATE BIN";
 
     }
 
@@ -261,9 +337,15 @@ async function predict() {
         binMessage;
 
 
-    // Send result to MIT App Inventor
+    /*
+     * SEND RESULT TO MIT APP INVENTOR
+     */
 
-    if (window.AppInventor) {
+    if (
+        window.AppInventor &&
+        typeof window.AppInventor
+            .setWebViewString === "function"
+    ) {
 
         window.AppInventor
             .setWebViewString(
@@ -275,11 +357,17 @@ async function predict() {
     }
 
 
-    // Continue prediction
+    /*
+     * Continue prediction
+     */
 
-    window.requestAnimationFrame(
-        predict
-    );
+    if (running) {
+
+        requestAnimationFrame(
+            predict
+        );
+
+    }
 
 }
 
